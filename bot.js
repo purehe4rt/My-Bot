@@ -1,6 +1,7 @@
 const mineflayer = require('mineflayer')
 const { pathfinder, Movements } = require('mineflayer-pathfinder')
 const { GoalFollow } = require('mineflayer-pathfinder').goals
+const collectBlock = require('mineflayer-collectblock')
 
 const bot = mineflayer.createBot({
     host: 'localhost',
@@ -9,6 +10,7 @@ const bot = mineflayer.createBot({
 })
 
 bot.loadPlugin(pathfinder)
+bot.loadPlugin(collectBlock.plugin)
 
 bot.once('spawn', () => {
     const mcData = require('minecraft-data')(bot.version)
@@ -36,5 +38,33 @@ bot.on('chat', async(username, message) => {
     } else if (message === 'стоп следовать') {
         bot.pathfinder.setGoal(null)
         bot.chat('Хорошо, я буду ждать здесь')
+    }
+
+    const mcData = require('minecraft-data')(bot.version)
+    const args = message.split(' ')
+
+    if (args[0] === 'собери') {
+        const blockType = mcData.blocksByName[args[1]]
+        if (!blockType) return bot.chat('Такого блока я не знаю :c')
+
+        let amount = parseInt(args[2])
+        if (isNaN(amount) || amount <= 0) amount = 1
+
+        const blocks = bot.findBlocks({
+            matching: blockType.id,
+            maxDistance: 32,
+            count: amount
+        })
+
+        if (blocks.length === 0) return bot.chat('Такого блока нет поблизости...')
+
+        const blockObj = blocks.map(pos => bot.blockAt(pos))
+
+        try {
+            await bot.collectBlock.collect(blockObj)
+        } catch (error) {
+            console.log(`Ошибка при подборе блока: ${error}`)
+            bot.chat('Произошла ошибка... (загляни в консоль)')
+        }
     }
 })
