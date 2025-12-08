@@ -2,11 +2,20 @@ const mineflayer = require('mineflayer')
 const { pathfinder, Movements } = require('mineflayer-pathfinder')
 const { GoalFollow } = require('mineflayer-pathfinder').goals
 const collectBlock = require('mineflayer-collectblock')
+const fs = require('fs')
+
+let config
+try {
+    config = JSON.parse(fs.readFileSync('./config.json', 'utf8'))
+} catch (error) {
+    console.log(`Ошибка при чтении конфига: ${error}`)
+    process.exit(1)
+}
 
 const bot = mineflayer.createBot({
-    host: 'localhost',
-    port: '25565',
-    username: 'MyBot'
+    host: config.bot.ip,
+    port: config.bot.port,
+    username: config.bot.name
 })
 
 bot.loadPlugin(pathfinder)
@@ -27,7 +36,9 @@ bot.on('error', error => console.log(`Произошла ошибка: ${error}`
 bot.on('chat', async(username, message) => {
     if (username === bot.username) return
 
-    if (message === 'следуй за мной') {
+    const messageLower = message.toLowerCase().trim()
+
+    if (config.commands.startFollow.includes(messageLower)) {
         const player = bot.players[username]
         if (!player?.entity) return bot.chat('Я тебя не вижу :c')
 
@@ -35,15 +46,19 @@ bot.on('chat', async(username, message) => {
 
         bot.pathfinder.setGoal(goal, true)
         bot.chat('Я теперь следую за тобой')
-    } else if (message === 'стоп следовать') {
+    } else if (config.commands.stopFollow.includes(messageLower)) {
         bot.pathfinder.setGoal(null)
         bot.chat('Хорошо, я буду ждать здесь')
     }
 
     const mcData = require('minecraft-data')(bot.version)
-    const args = message.split(' ')
 
-    if (args[0] === 'собери') {
+    if (config.commands.collect.find(cmd => messageLower.startsWith(cmd))) {
+        const args = messageLower.split(' ')
+        const blockName = args[1]
+
+        if (!blockName) return bot.chat('Вот как надо: "собери <ID> <кол-во>"')
+
         const blockType = mcData.blocksByName[args[1]]
         if (!blockType) return bot.chat('Такого блока я не знаю :c')
 
