@@ -2,6 +2,7 @@
   "dependencies": {
     "mineflayer": "^4.33.0",
     "mineflayer-collectblock": "^1.6.0",
-    "mineflayer-pathfinder": "^2.4.5"
+    "mineflayer-pathfinder": "^2.4.5",
+    "mineflayer-web-inventory": "^1.8.5"
   }
 }
